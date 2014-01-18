@@ -9,13 +9,11 @@ Current status:
 - Initialize controller
 - Receive button status
 - Set button LEDs
+- Values of the individual controls have been documented
 
 Not Working (yet)
-- Identify which particular button is pressed.
-      Currently we receive 64 bytes describing all buttons and dials
-- Identify individual LEDs.
-      Currently we send 10 bytes of data to control the LEDs,
-      but don't know which bit sets which LED.
+- Identify which particular button is pressed. Currently we receive 38 bytes describing all buttons and dials
+- Identify individual LEDs. Currently we send 10 bytes of data to control the LEDs, but don't know which bit sets which LED.
 - Interfacing to the rest of the system.
 
 
