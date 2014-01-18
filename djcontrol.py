@@ -144,7 +144,7 @@ from random import randint
 # 34 - (not used)
 # 35 - (not used)
 # 36 - (not used)
-# 37 - (not used)
+# 37 - sequence number; incremented by 1 on each update
 
 
 
