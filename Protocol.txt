@@ -1,0 +1,110 @@
+Monitored communication captured by usbmon and https://github.com/rakesh-roshan/usbmon-python-parser
+
+Init Sequence:
+    4-2-0	Ci	493ms	ERR!--Raw data:s c0 2c 0000 0000 0002 2 <
+    4-2-0	Ci	403us	Sta=0		RC=2	4040
+                        @@
+    4-2-1	Bi	2ms	Sta=-115	RE=64
+
+    4-2-0	Ci	102ms	ERR!--Raw data:s c0 29 0300 0000 0002 2 <
+    4-2-0	Ci	199us	Sta=0		RC=2	0c0c
+                        ..
+    4-2-0	Ci	11ms	ERR!--Raw data:s c0 29 0400 0000 0002 2 <
+    4-2-0	Ci	413us	Sta=0		RC=2	f2f2
+                        ..
+    4-2-0	Ci	1ms	ERR!--Raw data:s c0 29 0500 0000 0002 2 <
+    4-2-0	Ci	617us	Sta=0		RC=2	eded
+                        ..
+    4-2-0	Ci	1ms	ERR!--Raw data:s c0 29 0600 0000 0002 2 <
+    4-2-0	Ci	613us	Sta=0		RC=2	7373
+                        ss
+    4-2-0	Ci	2ms	ERR!--Raw data:s c0 2c 0000 0000 0002 2 <
+    4-2-0	Ci	537us	Sta=0		RC=2	4040
+                        @@
+    4-2-0	Ci	6ms	ERR!--Raw data:s c0 2c 0000 0000 0002 2 <
+    4-2-0	Ci	190us	Sta=0		RC=2	4040
+                        @@
+    4-2-0	Ci	10ms	ERR!--Raw data:s c0 29 0300 0000 0002 2 <
+    4-2-0	Ci	649us	Sta=0		RC=2	0c0c
+                        ..
+    4-2-0	Ci	1ms	ERR!--Raw data:s c0 29 0400 0000 0002 2 <
+    4-2-0	Ci	498us	Sta=0		RC=2	f2f2
+                        ..
+    4-2-0	Ci	1ms	ERR!--Raw data:s c0 29 0500 0000 0002 2 <
+    4-2-0	Ci	603us	Sta=0		RC=2	eded
+                        ..
+    4-2-0	Ci	2ms	ERR!--Raw data:s c0 29 0600 0000 0002 2 <
+    4-2-0	Ci	593us	Sta=0		RC=2	7373
+                        ss
+    4-2-0	Ci	1ms	ERR!--Raw data:s c0 29 0200 0000 0002 2 <
+    4-2-0	Ci	430us	Sta=0		RC=2	0000
+                        ..
+    4-2-0	Co	4ms	CLEAR_FEATURE	RE=0	02 01 0000 0082
+    4-2-0	Co	443us	Sta=0		RC=0
+
+    4-2-0	Co	27s	ERR!--Raw data:s 40 27 0000 0000 0000 0
+    4-2-0	Co	1ms	Sta=0		RC=0
+
+    4-2-1	Bi	23us	Sta=0		RC=38	00000000 00007e80 8080b97e 808080fb 33000700 00000000 00000000 00000000
+                        ......~....~....3...............
+    4-2-1	Bi	848us	Sta=-115	RE=64
+
+Afterwards data can be read from the device from endpoint 0x81:
+
+
+Reading current button state:
+  ret = dev.read(0x81, 64)
+ret: array('B', [0, 0, 0, 0, 0, 0, 127, 128, 128, 128, 129, 150, 128, 128, 128, 104, 129, 252, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 242, 237, 115, 64, 12])
+
+
+# Button-LED "Deck A, Play" on:
+4-2-0	Co	203s	ERR!--Raw data:s 40 2d 0000 0000 0000 0
+4-2-0	Co	404us	Sta=0		RC=0
+
+4-2-0	Co	5ms	ERR!--Raw data:s 40 2e 0004 0000 0000 0
+4-2-0	Co	361us	Sta=0		RC=0
+
+4-2-0	Co	5ms	ERR!--Raw data:s 40 2f 0000 0000 0000 0
+4-2-0	Co	484us	Sta=0		RC=0
+
+4-2-0	Co	4ms	ERR!--Raw data:s 40 30 0000 0000 0000 0
+4-2-0	Co	353us	Sta=0		RC=0
+
+4-2-0	Co	4ms	ERR!--Raw data:s 40 31 0000 0000 0000 0
+4-2-0	Co	531us	Sta=0		RC=0
+
+4-2-1	Bi	9us	Sta=0		RC=38	00000000 00007f80 80808196 80808068 81fc2b00 00000400 00000000 00000000
+					...............h..+.............
+4-2-1	Bi	468us	Sta=-115	RE=64
+
+
+# Button-LED "Deck A, Play" off:
+4-2-0	Co	609s	ERR!--Raw data:s 40 2d 0000 0000 0000 0
+4-2-0	Co	577us	Sta=0		RC=0
+
+4-2-0	Co	5ms	ERR!--Raw data:s 40 2e 0000 0000 0000 0
+4-2-0	Co	712us	Sta=0		RC=0
+
+4-2-0	Co	4ms	ERR!--Raw data:s 40 2f 0000 0000 0000 0
+4-2-0	Co	425us	Sta=0		RC=0
+
+4-2-0	Co	9ms	ERR!--Raw data:s 40 30 0000 0000 0000 0
+4-2-0	Co	804us	Sta=0		RC=0
+
+4-2-0	Co	4ms	ERR!--Raw data:s 40 31 0000 0000 0000 0
+4-2-0	Co	963us	Sta=0		RC=0
+
+4-2-1	Bi	22us	Sta=0		RC=38	00000000 00007f80 80808196 80808068 81fc2b00 00000000 00000000 00000000
+					...............h..+.............
+4-2-1	Bi	2ms	Sta=-115	RE=64
+
+Set LEDs State:
+  LEDs are switched using Control Messages
+  General syntax: dev.ctrl_transfer(bmRequestType, bRequest, wValue, wIndex)
+    bmRequestType:  0x40
+    bRequest:       one of 0x2d, 0x2e, 0x2f, 0x30, 0x31
+    wValue:         Bits; exact meaning unclear, yet
+    wIndex:         unclear
+
+  It's unclear if all all 5 blocks (0x2d to 0x31) have to be sent or if a single block suffices.
+
