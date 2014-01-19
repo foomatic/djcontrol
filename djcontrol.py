@@ -4,6 +4,7 @@ import usb.core
 import usb.util
 import time
 from random import randint
+import sys
 
 # This is a tools that talks to the
 #   Hercules DJControl MP3 LE
@@ -146,6 +147,78 @@ from random import randint
 # 36 - (not used)
 # 37 - sequence number; incremented by 1 on each update
 
+# LEDs; Value1:
+# block/bit key
+# 0/01 N2_A
+# 0/02 Listen_A
+# 0/03 Magic
+# 0/04 Listen_B
+# 0/05 N2_B
+# 0/08 PitchReset_A
+# 0/09 N1_A
+# 0/10 Sync_A
+# 0/11 Vinyl
+# 0/12 Sync_B
+# 0/13 N1_B
+# 0/14 PitchReset_B
+# 1/00 PitchBendPlus_A
+# 1/01 N4_A
+# 1/02 Play_A
+# 1/03 Files
+# 1/04 Play_B
+# 1/05 N4_B
+# 1/06 PitchBendPlus_B
+# 1/08 PitchBendMinus_A
+# 1/09 N3_A
+# 1/10 CUE_A
+# 1/11 Folders
+# 1/12 CUE_B
+# 1/13 N3_B
+# 1/14 PitchBendMinus_B
+# 2/08 N5_A
+# 2/09 N6_A
+# 2/10 N7_A
+# 2/11 N8_A
+# 2/12 N5_B
+# 2/13 N6_B
+# 2/14 N7_B
+# 2/15 N8_B
+
+# Blink
+# 2/00 PitchReset_A
+# 2/01 N1_A
+# 2/02 Sync_A
+# 2/03 Vinyl
+# 2/04 Sync_B
+# 2/05 N1_B
+# 2/06 PitchReset_B
+# 3/00 PitchBendMinus_A
+# 3/01 N3_A
+# 3/02 CUE_A
+# 3/03 Folders
+# 3/04 CUE_B
+# 3/05 N3_B
+# 3/06 PitchBendMinus_B
+# 3/09 N2_A
+# 3/10 Listen_A
+# 3/11 Magic
+# 3/12 Listen_B
+# 3/13 N2_B
+# 4/00 N5_A
+# 4/01 N6_A
+# 4/02 N7_A
+# 4/03 N8_A
+# 4/04 N5_B
+# 4/05 N6_B
+# 4/06 N7_B
+# 4/07 N8_B
+# 4/08 PitchBendPlus_A
+# 4/09 N4_A
+# 4/10 Play_A
+# 4/11 Files
+# 4/12 Play_B
+# 4/13 N4_B
+# 4/14 PitchBendPlus_B
 
 
 class djcontrol:
@@ -210,37 +283,44 @@ class djcontrol:
     def ClearButtons(self):
         """Turn all button LEDs off
         """
-        #print "ClearButtons"
         self.dev.ctrl_transfer(0x40, 0x2d, 0x0000, 0x0000)
         self.dev.ctrl_transfer(0x40, 0x2e, 0x0000, 0x0000)
         self.dev.ctrl_transfer(0x40, 0x2f, 0x0000, 0x0000)
         self.dev.ctrl_transfer(0x40, 0x30, 0x0000, 0x0000)
         self.dev.ctrl_transfer(0x40, 0x31, 0x0000, 0x0000)
 
-    def SetButtons(self):
+    def SetButtons(self, block, value):
         """Set Button LEDs
-        Currently sends random values.
-        Some values let buttons blink.
+        block is number of segment to send; valid values: 0..4
+        value is numeric value to write into block; Valid value: 32bit integer
         """
-        #print "SetButtons"
-        bval = 1 << randint(0, 31) | 1 << randint(0, 31)
-        self.dev.ctrl_transfer(0x40, 0x2d, bval, 0x0000)
-        bval = 1 << randint(0, 31) | 1 << randint(0, 31)
-        self.dev.ctrl_transfer(0x40, 0x2e, bval, 0x0000)
-        bval = 1 << randint(0, 31) | 1 << randint(0, 31)
-        self.dev.ctrl_transfer(0x40, 0x2f, bval, 0x0000)
-        bval = 1 << randint(0, 31) | 1 << randint(0, 31)
-        self.dev.ctrl_transfer(0x40, 0x30, bval, 0x0000)
-        bval = 1 << randint(0, 31) | 1 << randint(0, 31)
-        self.dev.ctrl_transfer(0x40, 0x31, bval, 0x0000)
+        if block == 0:
+            self.dev.ctrl_transfer(0x40, 0x2d, value, 0x0000)
+        if block == 1:
+            self.dev.ctrl_transfer(0x40, 0x2e, value, 0x0000)
+        if block == 2:
+            self.dev.ctrl_transfer(0x40, 0x2f, value, 0x0000)
+        if block == 3:
+            self.dev.ctrl_transfer(0x40, 0x30, value, 0x0000)
+        if block == 4:
+            self.dev.ctrl_transfer(0x40, 0x31, value, 0x0000)
 
 
 # create an instance of the controller interface
 djc = djcontrol()
 
 while True:
-    #djc.SetButtons()    # set random LEDs
-    #time.sleep(0.2)
-    #djc.ClearButtons()  # clean up LEDs
-    #time.sleep(0.2)
-    djc.ShowButtons()    # show button state
+    #djc.ShowButtons()    # show button state
+    djc.ClearButtons()
+    for block in range(0, 6):
+        value = 0
+        djc.ClearButtons()
+        for bit in range(0, 32):
+            value |= 1<<bit
+            print 'Set Bock/bit: %d/%s' % (block, bit)
+            djc.SetButtons(block, value)
+            #djc.SetButtons(block, 1 << bit)
+            #time.sleep(0.1)
+            sys.stdin.read(1)
+
+
