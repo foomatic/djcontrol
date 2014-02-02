@@ -5,6 +5,7 @@ import usb.util
 import time
 from random import randint
 import sys
+import pprint
 
 # This is a tools that talks to the
 #   Hercules DJControl MP3 LE
@@ -220,6 +221,105 @@ import sys
 # 4/13 N4_B
 # 4/14 PitchBendPlus_B
 
+# Store control map:
+# Controls are stored in a list
+# Each control has its own entry
+# Each entry has a number of properties:
+#   * Name;         terse, for referring to the control
+#   * Location;     number of byte where the Value of the control is stored
+#   * Bitmask;      Applied to byte, mask different buttons from byte
+#   * type;         0: button; 1: slider/dial; 2: jog-wheel
+#                   button:         Value 0 or 1  (absolute value)
+#                   slider/dial:    Value 0..255  (absolute value)
+#                   jog-wheel:      Value 0..255  (absolute value)
+#                                   TODO: Value -127..+127 (difference from previous value)
+#
+
+
+class controls:
+    """ keeps list of controls and their current values
+    """
+    control_map = []    # list of all controls
+    curr_values = []    # list of current  control state
+    prev_values = []    # list of previous control state
+
+    def __init__(self):
+        pass
+
+    def loadConfig(self, filename):
+        """ Load control layout from config file.
+        """
+        with open(filename) as f:
+            counter = 0
+            for line in f:
+                line = line.strip()
+                values = line.split(";")
+                if (len(values) == 4) and (not line.startswith("#")):
+                    name    = values[0]
+                    loc     = values[1]
+                    bitmask = values[2]
+                    type    = values[3]
+
+                    #print "[DEBUG]: %s/%s/%s/%s" % (name, loc, bitmask, type)
+                    curr_control = {
+                        "num"  : counter,
+                        "name" : name,
+                        "loc"  : loc,
+                        "mask" : bitmask,
+                        "type" : type
+                    }
+                    self.control_map.append(curr_control)
+                    counter += 1
+
+        # initialize self.curr_values to length of control list
+        self.curr_values = [None] * len(self.control_map)
+
+        # [DEBUG]
+        #pp = pprint.PrettyPrinter(indent=2)
+        #pp.pprint(self.control_map)
+
+
+
+    def readControls(self, state):
+        """ reads control states from argument state; compares with previous values.
+        """
+        # Procedure:    copy self.curr_values to self.prev_values;
+        #               iterate over self.control_map;
+        #               Test each entry in state;
+        #               Update self.curr_values
+
+        # still current values are old soon
+        self.prev_values = list(self.curr_values)
+
+        # iterate over control_map; copy each control to curr_values
+        counter = 0
+        for control in self.control_map:
+            loc = int(control['loc'], 0)
+            mask = int(control['mask'], 0)
+            type = int(control['type'])
+            #print "loc/mask: %s/%s" % (loc, mask)
+            curr_value = state[loc] & mask
+            if type == 0:    # button
+                self.curr_values[counter] = int(curr_value > 0)
+            else:  # slider/dial or jog-dial; No difference in treatment, yet
+                self.curr_values[counter] = curr_value
+            counter += 1
+
+        # [DEBUG]
+        #pp = pprint.PrettyPrinter(indent=2)
+        #pp.pprint(self.curr_values)
+
+
+
+    def listChanges(self):
+        """ Returns list of controls that changed between last two readings.
+        """
+        diff = []
+        for counter in range(len(self.curr_values)):
+            if self.curr_values[counter] != self.prev_values[counter]:
+                diff.append(counter)
+
+        return(diff)
 
 class djcontrol:
     curr_state = []     # most recent button state read from the device
@@ -309,18 +409,20 @@ class djcontrol:
 # create an instance of the controller interface
 djc = djcontrol()
 
+# create controls
+con = controls()
+con.loadConfig("hercules_djcontrol_mp3_le.conf")
+
+djc.ClearButtons()
 while True:
-    #djc.ShowButtons()    # show button state
-    djc.ClearButtons()
-    for block in range(0, 6):
-        value = 0
-        djc.ClearButtons()
-        for bit in range(0, 32):
-            value |= 1<<bit
-            print 'Set Bock/bit: %d/%s' % (block, bit)
-            djc.SetButtons(block, value)
-            #djc.SetButtons(block, 1 << bit)
-            #time.sleep(0.1)
-            sys.stdin.read(1)
+    con.readControls(djc.GetButtons())
+    ch = con.listChanges()
+    for curr_control in ch:
+        value = con.curr_values[curr_control]
+        if value > 1:
+            value = value/2 * '#'
+        print("%s: %s" % (con.control_map[curr_control]['name'], value))
+    time.sleep(0.01)
+
 
 
