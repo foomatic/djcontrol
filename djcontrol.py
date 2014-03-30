@@ -13,13 +13,16 @@ import pprint
 # It uses libUSB and PyUSB to talk to the controller via USB.
 #
 # Goals:
-#   * read events from the controller (Button-pushes, Slider-movements)
-#   * Turn LEDs under the buttons on/off
-#   * Change sensitivity of the jog-dials (if possible; the windows-control-software implies that is possible)
-#   * Act as ALSA-MIDI-Device to control audio-software
+#   * read events from the controller (Button-pushes, Slider-movements) [works]
+#   * Turn LEDs under the buttons on/off  [prototype works, not properly usable, yet]
+#   * Change sensitivity of the jog-dials (if possible; the windows-control-software implies that is possible) [no research done]
+#   * Act as ALSA-MIDI-Device to control audio-software [not started]
+#   * Invoke external command [not started]
 #
 # TODO:
-#   * name each value in data-exchange-buffers to qualify buttons/sliders/LEDs
+#   * Define config layout for events and actions ("events.conf")
+#   * Read events.conf
+#   * write event-matching
 #
 # Gathered information:
 #   * USB vid/pid: 06f8:b105
@@ -278,8 +281,6 @@ class controls:
         #pp = pprint.PrettyPrinter(indent=2)
         #pp.pprint(self.control_map)
 
-
-
     def readControls(self, state):
         """ reads control states from argument state; compares with previous values.
         """
@@ -308,8 +309,6 @@ class controls:
         # [DEBUG]
         #pp = pprint.PrettyPrinter(indent=2)
         #pp.pprint(self.curr_values)
-
-
 
     def listChanges(self):
         """ Returns list of controls that changed between last two readings.
@@ -356,7 +355,6 @@ class djcontrol:
         self.dev.ctrl_transfer(0x02, 0x01, 0x0000, 0x0082)     # =>    0
         self.dev.ctrl_transfer(0x40, 0x27, 0x0000, 0x0000)     # =>    0
 
-
     def GetButtons(self):
         """Return current Button/Dial values
         """
@@ -377,8 +375,6 @@ class djcontrol:
         for num in self.curr_state:
             print "%02d: (%s) %s" % (i, hex(num), bin(num))
             i += 1
-
-
 
     def ClearButtons(self):
         """Turn all button LEDs off
@@ -405,6 +401,9 @@ class djcontrol:
         if block == 4:
             self.dev.ctrl_transfer(0x40, 0x31, value, 0x0000)
 
+#
+# =============================
+#
 
 # create an instance of the controller interface
 djc = djcontrol()
