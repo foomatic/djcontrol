@@ -3,6 +3,8 @@
 import usb.core
 import usb.util
 import time
+import subprocess       # f. events
+
 from random import randint
 import sys
 import pprint
@@ -241,6 +243,9 @@ import pprint
 
 class controls:
     """ keeps list of controls and their current values
+        control_map:    list with technical information about each control, see "Store control map"
+        curr_values
+        prev_values:    lists with values of controls named in control_map.
     """
     control_map = []    # list of all controls
     curr_values = []    # list of current  control state
@@ -319,6 +324,180 @@ class controls:
                 diff.append(counter)
 
         return(diff)
+
+    def listChanges_dic(self):
+        """ Returns dictionary of controls that changed between last two readings
+            Key: Control-name
+            Value: 1 - control has been changed
+        """
+        rv = dict()
+
+        for curr_control in self.listChanges():
+            key = self.control_map[curr_control]['name']
+            #value = self.curr_values[curr_control]     # not required anymore.
+            rv[key] = 1
+
+        return rv
+
+        # ch = con.listChanges()
+        # for curr_control in ch:
+        #     value = con.curr_values[curr_control]
+        #     if value > 1:
+
+    def listCurrentValues_dic(self):
+        """ Returns all dictionary with current value of all controls.
+        """
+        rv = dict()
+
+        for curr_control in range(len(self.curr_values)):
+            key = self.control_map[curr_control]['name']
+            value = self.curr_values[curr_control]
+            rv[key] = value
+
+        return rv
+
+
+class event:
+    """ Single event; Is created in events class from config file.
+    """
+
+    # type constants
+    TYPE_NONE   = 0
+    TYPE_PYTHON = 1
+    TYPE_SHELL  = 2
+
+    condition = ""      # condition that needs to be met for event to fire
+    order = -1          # order in config file
+    type = TYPE_NONE    # type of event, one of TYPE_NONE, TYPE_PYTHON or TYPE_SHELL
+    action = []         # action that executes when event fires
+    raw_text = []       # event-text as in config-file
+
+    def __init__(self):
+        self.action = []
+
+    def parse(self):
+        for line in self.raw_text:
+            # extract condition
+            if line.startswith("?"):
+                cond = line[1:]         # skip ?-character
+                self.condition = cond
+
+            # extract type
+            elif line.startswith("!"):
+                typestring = line[1:]       # skip !-character
+                if typestring == "python":
+                    self.type = self.TYPE_PYTHON
+                elif typestring == "shell":
+                    self.type = self.TYPE_SHELL
+
+            # extract action
+            else:
+                self.action.append(line)
+
+    def toString(self):
+        print "Condition: " + self.condition
+        if self.type == self.TYPE_PYTHON:
+            typestring = "python"
+        elif self.type == self.TYPE_SHELL:
+            typestring = "shell"
+        elif self.type == self.TYPE_NONE:
+            typestring = "none"
+        else:
+            typestring = "invalid"
+
+        print "Type: " + typestring
+        print "Action: " + "\n  ".join(self.action)
+
+
+    def eval(self, con):
+        #print "eval "+ self.condition
+
+        # prepare environment
+        c = con.listChanges_dic()
+        v = con.listCurrentValues_dic()
+
+        try:
+            if eval(self.condition):
+                print "Condition met: " + self.condition
+                if self.type == self.TYPE_PYTHON:
+                    for line in self.action:
+                        print "action: " + line
+                        exec(line)
+                elif self.type == self.TYPE_SHELL:
+                    print "Action type >shell< not yet implemented."
+            else:
+                pass
+                #print "Condition failed!"
+        except:
+            print "exception cought!"
+            raise
+
+
+class events:
+    """ keeps List of events as defined in events.conf
+        Each event has a list of requirements that need to be met for the event to fire.
+        If an event fires, its action is executed.
+    """
+
+    events = []         # Array of events
+
+    def __init__(self):
+        pass
+
+    def loadConfig(self, filename):
+        """ Load events from config file.
+            Event-layout:
+                <event-condition>
+                    <action-type>
+                    <action-commands>
+
+            <event-condition>   is single line starting with a '?' (question-mark)
+            <action-type>       is "!python" or "!shell" (case sensitive)
+            <action-commands>   is action-text for event; may be multi-line
+                                both <action-type> and <action-command> need to be indented by at least one space or tab
+
+            parsing:
+                * fetch entire event including action
+                * A new event starts when a line is not indented.
+                * empty lines are skipped. Therefore empty lines can't be part of an action!
+        """
+
+        with open(filename) as f:
+            event_counter = 0           # number of event (from order in file)
+            curr_event = None           # no event at start;
+            event_lines = []            # complete text of event.
+
+            # read events-config; split distinct events; store event-text in separate event-objects
+            for line in f:
+                line = line.strip()    # remove spaces as well as newlines
+
+                # skip comments and empty lines
+                if (line.strip().startswith("#")) or (line.strip() == ""):
+                    continue
+
+                if line.startswith("?"):                    # === Start of new event
+                    if curr_event is not None:              # store prev event
+                        curr_event.raw_text = event_lines
+                        self.events.append(curr_event)
+
+                    # init new event
+                    curr_event = event()
+                    curr_event.order = event_counter
+                    event_counter += 1
+                    event_lines = [line]   # all-event-lines start with condition
+                else:                                      # === Continuation of event
+                    event_lines.append(line)  # append current line
+
+            if curr_event is not None:  # reading file done, store last event (if any)
+                curr_event.raw_text = event_lines
+                self.events.append(curr_event)
+
+        # event-texts have been read, process each event.
+        for curr_event in self.events:
+            curr_event.parse()
+            print "Event " + str(curr_event.order) + ": "
+            curr_event.toString()
+
 
 class djcontrol:
     curr_state = []     # most recent button state read from the device
@@ -401,9 +580,13 @@ class djcontrol:
         if block == 4:
             self.dev.ctrl_transfer(0x40, 0x31, value, 0x0000)
 
+
 #
 # =============================
 #
+
+# Update frequency in Hz
+freq = 50
 
 # create an instance of the controller interface
 djc = djcontrol()
@@ -412,7 +595,17 @@ djc = djcontrol()
 con = controls()
 con.loadConfig("hercules_djcontrol_mp3_le.conf")
 
-djc.ClearButtons()
+# create events
+ev = events()
+ev.loadConfig("events.conf")
+
+djc.ClearButtons()      # switch off all Button-LEDs
+
+# read device-state at startup
+# so event's don't fire as every control has changed from "no-state"
+con.readControls(djc.GetButtons())
+ch = con.listChanges()
+
 while True:
     con.readControls(djc.GetButtons())
     ch = con.listChanges()
@@ -421,7 +614,15 @@ while True:
         if value > 1:
             value = value/2 * '#'
         print("%s: %s" % (con.control_map[curr_control]['name'], value))
-    time.sleep(0.01)
+
+    if len(ch) > 0:
+        print "change has occured."
+        for event in ev.events:
+            event.eval(con)
+
+    # wait for next iteration
+    time.sleep(1.0/freq)
+
 
 
 
