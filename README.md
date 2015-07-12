@@ -12,6 +12,8 @@ Current status:
 - Values of the individual controls have been documented
 - Controls are defined in a config file
 - Changes to a control are identified
+- A control change may invoke a python command
+ 
 
 Not Working (yet)
 - Control LED by name; Location of the LEDs has been documented but no control method has been written, yet.
